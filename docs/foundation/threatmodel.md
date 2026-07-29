@@ -96,7 +96,7 @@
 | **Risk** | Medium |
 | **Vector** | Malicious actor steals refresh token from database compromise or insecure storage |
 | **Impact** | Long-term access without credentials (up to 7 days) |
-| **Mitigation** | Refresh tokens stored as bcrypt hashes in the database. Token rotation invalidates old tokens. If a stolen refresh token is used after the legitimate user has already rotated it, the system detects a "theft" pattern and invalidates ALL sessions for that user. |
+| **Mitigation** | Refresh tokens stored as SHA-256 hashes in the database. Token rotation invalidates old tokens. If a stolen refresh token is used after the legitimate user has already rotated it, the system detects a "theft" pattern and invalidates ALL sessions for that user. |
 | **Status** | Planned |
 
 ### T-10: Enumeration Attacks

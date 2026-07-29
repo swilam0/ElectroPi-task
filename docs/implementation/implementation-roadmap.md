@@ -199,100 +199,199 @@ Token refresh with rotation and theft detection, logout with full session invali
 
 ---
 
-## Phase 3: Users Module
+## Phase 3a: User Listing & Profile Management
 
 ### Goal
-User CRUD and role management (admin-only + self-service password change).
+User listing, profile retrieval, and profile updates (self-service or by admin).
 
 ### Dependencies
 - Phases 2a–2b (all endpoints behind JwtAuthGuard; JWT auth and guards required)
 
 ### Documents
-- `users-module.md`
-- `error-catalogue.md`
+- `users-module.md` (list, get, update sections)
+- `error-catalogue.md` (Z-001, Z-002)
 - `constitution.md` (§11)
 
 ### Deliverables
 - `UsersModule` with controller, service, repository
-- DTOs: `UpdateUserDto`, `ChangeRoleDto`, `ChangePasswordDto`
-- `UsersService`: list (paginated, search/filter by name/email/role), get by ID, update profile, change role (prevent self-demotion), change password (self-service with `currentPassword`, admin reset without), delete user (prevent self-delete, check owned projects/tasks)
+- DTO: `UpdateUserDto`
+- `UsersService.list` — paginated list with search (partial match on name/email) and role filter; ADMIN sees all users, MEMBER gets 403 Z-001
+- `UsersService.findById` — get single user by ID; ADMIN sees any user, MEMBER gets 403 Z-001
+- `UsersService.updateProfile` — update name and/or email; user can update own profile, admin can update any; email uniqueness enforced on change
+- `UsersRepository` — `findAll` (paginated, with search and role filter), `findById`, `findByEmail` (for uniqueness check), `update`
 
 ### Checklist
-- [ ] `GET /api/users` — admin sees list; member gets `403` Z-001
-- [ ] `GET /api/users/:id` — admin sees user; member gets `403` Z-001
-- [ ] `PATCH /api/users/:id` — user can update own name/email; admin can update any
-- [ ] `PATCH /api/users/:id` — member trying another user gets `403` Z-002
-- [ ] `PATCH /api/users/:id/role` — admin can change role; cannot change own role (`403` Z-003)
-- [ ] `PATCH /api/users/:id/password` — self-service requires `currentPassword`; admin reset does not
-- [ ] `DELETE /api/users/:id` — admin can delete; cannot delete self (`403` Z-003); user with owned projects/tasks blocked (`409` U-002)
-- [ ] Email uniqueness enforced on update
+- [ ] `GET /api/users` — ADMIN sees paginated user list with `meta` (page, limit, total, totalPages)
+- [ ] `GET /api/users` — MEMBER gets `403` Z-001
+- [ ] `GET /api/users` — search by name/email and filter by role work correctly
+- [ ] `GET /api/users/:id` — ADMIN sees the user; MEMBER gets `403` Z-001
+- [ ] `PATCH /api/users/:id` — user can update own name and email
+- [ ] `PATCH /api/users/:id` — ADMIN can update any user's name and email
+- [ ] `PATCH /api/users/:id` — MEMBER trying to update another user gets `403` Z-002
+- [ ] Email uniqueness is enforced when changing email (duplicate returns `400` A-003)
 
 ---
 
-## Phase 4: Projects Module
+## Phase 3b: Role, Password & User Deletion
 
 ### Goal
-Project CRUD and membership management with role-based access.
+Admin security operations — role changes with self-demotion prevention, password changes (self-service and admin reset), and user deletion with ownership checks.
+
+### Dependencies
+- Phase 3a (users must exist; user repository and module already in place)
+
+### Documents
+- `users-module.md` (role, password, delete sections)
+- `error-catalogue.md` (Z-001, Z-003, U-001, U-002)
+
+### Deliverables
+- DTOs: `ChangeRoleDto`, `ChangePasswordDto`
+- `UsersService.changeRole` — change a user's role; ADMIN only; cannot change own role (403 Z-003); valid roles: ADMIN, MEMBER
+- `UsersService.changePassword` — self-service requires `currentPassword` for verification; admin reset requires only `newPassword`; `newPassword` validated (min 8 chars, max 128, at least 1 letter + 1 number); bcrypt hashed at cost >= 12
+- `UsersService.deleteUser` — ADMIN only; cannot delete self (403 Z-003); check user has no owned projects or tasks (409 U-002 if they do); cascading removal of project memberships
+- `UsersRepository` — `updateRole`, `updatePassword`, `countOwnedProjects`, `countOwnedTasks`, `delete` (additions to the Phase 3a repository)
+
+### Checklist
+- [ ] `PATCH /api/users/:id/role` — ADMIN can change role; MEMBER gets `403` Z-001
+- [ ] `PATCH /api/users/:id/role` — ADMIN cannot change own role (`403` Z-003)
+- [ ] `PATCH /api/users/:id/password` — self-service with correct `currentPassword` succeeds
+- [ ] `PATCH /api/users/:id/password` — self-service with wrong `currentPassword` returns `400` A-003
+- [ ] `PATCH /api/users/:id/password` — ADMIN can reset any user's password without `currentPassword`
+- [ ] `DELETE /api/users/:id` — ADMIN can delete; MEMBER gets `403` Z-001
+- [ ] `DELETE /api/users/:id` — ADMIN cannot delete self (`403` Z-003)
+- [ ] `DELETE /api/users/:id` — user with owned projects or tasks gets `409` U-002 (deletion blocked)
+
+---
+
+## Phase 4a: Project CRUD
+
+### Goal
+Project creation, listing, retrieval, and updates with membership-based access control.
 
 ### Dependencies
 - Phases 2a–2b (JwtAuthGuard)
-- Phase 3 (user lookup for membership)
+- Phase 3a (user lookup for membership; basic user repository methods)
 
 ### Documents
-- `projects-module.md`
+- `projects-module.md` (create, list, get, update sections)
 - `error-catalogue.md`
-- `constitution.md` (§16–18, §20)
+- `constitution.md` (§16–18)
 
 ### Deliverables
 - `ProjectsModule` with controller, service, repository
-- DTOs: `CreateProjectDto`, `UpdateProjectDto`, `AddMemberDto`
-- `ProjectsService`: create (auto-add creator), list (ADMIN all, MEMBER own), get by ID (membership check with admin override), update (any member or admin), delete (admin any or creator), add/remove members (admin only, cannot remove creator)
-- Cascade delete: project deletion removes tasks and memberships
+- DTOs: `CreateProjectDto`, `UpdateProjectDto`
+- `ProjectsService.create` — create project, auto-add creator as MEMBER of the project
+- `ProjectsService.list` — ADMIN sees all projects; MEMBER sees only projects they are a member of; pagination (page/limit), search (partial title match), sort (createdAt, title, updatedAt)
+- `ProjectsService.findById` — get single project with members list; ADMIN bypasses membership check; MEMBER must be a member (403 P-001 if not)
+- `ProjectsService.update` — any project member or any ADMIN can update title/description
+- `ProjectsRepository` — `create`, `findAll` (paginated, with search and sort), `findById`, `update`, `isMember`
 
 ### Checklist
-- [ ] `GET /api/projects` — ADMIN sees all; MEMBER sees own; pagination/search/sort work
-- [ ] `POST /api/projects` — creates project, creator auto-added as member, returns `201`
-- [ ] `GET /api/projects/:id` — member or admin can view; non-member gets `403` P-001
-- [ ] `PATCH /api/projects/:id` — any member can update; admin can update any
-- [ ] `DELETE /api/projects/:id` — admin or creator can delete; member-non-creator gets `403` Z-002
-- [ ] `POST /api/projects/:id/members` — admin adds user; member gets `403` Z-001; existing member gets `409` P-003
-- [ ] `DELETE /api/projects/:id/members/:userId` — admin removes; cannot remove creator (`403` P-004)
-- [ ] Project deletion cascades to tasks and memberships
+- [ ] `GET /api/projects` — ADMIN sees all projects; MEMBER sees only own; pagination/search/sort work correctly
+- [ ] `POST /api/projects` — creates project with title/description, creator auto-added as member, returns `201`
+- [ ] `GET /api/projects/:id` — member or admin can view project with members list; non-member gets `403` P-001
+- [ ] `PATCH /api/projects/:id` — any project member can update title/description; admin can update any project
+- [ ] Project response includes `creator: { id, name }`, `memberCount`, `taskCount`
 
 ---
 
-## Phase 5: Tasks Module
+## Phase 4b: Project Deletion & Membership Management
 
 ### Goal
-Full task lifecycle, state machine enforcement, and assignment.
+Project deletion with cascade, and member add/remove operations restricted to admins.
+
+### Dependencies
+- Phase 4a (projects must exist before they can be deleted or have members managed)
+
+### Documents
+- `projects-module.md` (delete, members sections)
+- `error-catalogue.md`
+- `constitution.md` (§17, §20)
+
+### Deliverables
+- DTO: `AddMemberDto`
+- `ProjectsService.delete` — hard delete per Constitution §15; ADMIN can delete any project; MEMBER can delete only projects they created (Z-002 if not); cascade removes all tasks and project memberships
+- `ProjectsService.addMember` — ADMIN only (Z-001 for MEMBER); user must exist (U-001); user must not already be a member (409 P-003)
+- `ProjectsService.removeMember` — ADMIN only (Z-001 for MEMBER); cannot remove the project creator (403 P-004); removed user's task assignments set to null
+- `ProjectsRepository` — `delete`, `addMember`, `removeMember`, `isMember`, `findMember` (additions to the Phase 4a repository)
+
+### Checklist
+- [ ] `DELETE /api/projects/:id` — ADMIN can delete any project; creator can delete own project; member-non-creator gets `403` Z-002
+- [ ] `DELETE /api/projects/:id` — project not found returns `404` P-002; non-member trying to delete gets `403` P-001
+- [ ] Project deletion cascades — all associated tasks and project memberships are removed
+- [ ] `POST /api/projects/:id/members` — ADMIN adds a user; MEMBER gets `403` Z-001; already a member gets `409` P-003
+- [ ] `DELETE /api/projects/:id/members/:userId` — ADMIN removes a user; cannot remove the project creator (`403` P-004)
+- [ ] After removing a member, their task assignments in that project are set to null
+
+---
+
+## Phase 5a: Task CRUD — Create, Read, List, Delete
+
+### Goal
+Task creation, listing by project, single-task retrieval, and deletion — the basic lifecycle without status transitions.
 
 ### Dependencies
 - Phases 2a–2b (JwtAuthGuard)
-- Phase 4 (project membership checks)
+- Phase 4a (project CRUD and membership checks)
 
 ### Documents
-- `tasks-module.md`
+- `tasks-module.md` (create, list, get, delete sections)
 - `error-catalogue.md`
 - `constitution.md` (§12, §15)
 
 ### Deliverables
 - `TasksModule` with controller, service, repository
-- DTOs: `CreateTaskDto`, `UpdateTaskDto`, `TaskFilterDto`
-- `TasksService`: create (in project, auto-set creator), list by project (status/priority/assignee filters, sort, pagination), get by ID (scoped to membership), update (field + status), delete (admin or creator)
-- `StatusTransitionValidator`: enforces state machine (TODO↔IN_PROGRESS↔DONE, admin-only DONE reopening); blocks TODO→DONE; enforces assignee for IN_PROGRESS
+- DTOs: `CreateTaskDto`, `TaskFilterDto`
+- `TasksService.create` — create task in a project, auto-set `createdById` to the authenticated user; assignee must be a member of the parent project (400 T-001)
+- `TasksService.listByProject` — list tasks in a project; scoped to project membership; filterable by status, priority, assigneeId; sortable by createdAt, dueDate, priority, status; paginated (page/limit)
+- `TasksService.findById` — get single task by ID; scoped to project membership of the authenticated user (non-member gets 404 T-002)
+- `TasksService.delete` — hard delete per Constitution §15; ADMIN or task creator can delete; MEMBER who is not the creator gets 403 Z-002
+- `TasksRepository` — `create`, `findByProject` (with filters, sort, pagination), `findById` (with project membership join), `isMemberOfProject`, `delete`
 
 ### Checklist
-- [ ] `GET /api/projects/:pid/tasks` — lists tasks (members only); filters/sort/pagination work
-- [ ] `POST /api/projects/:pid/tasks` — creates task, auto-sets creator, returns `201`
-- [ ] `GET /api/tasks/:id` — returns task (scoped to project membership)
-- [ ] `PATCH /api/tasks/:id` — any member updates title/description/priority/dueDate; status follows state machine
-- [ ] `TODO → IN_PROGRESS` succeeds; `TODO → DONE` returns `400` T-003
-- [ ] `IN_PROGRESS → DONE` succeeds; `IN_PROGRESS → TODO` succeeds
-- [ ] `DONE → TODO` or `DONE → IN_PROGRESS` — admin succeeds, member gets `403` T-004
-- [ ] Unassigned task → `IN_PROGRESS` returns `400` T-005
-- [ ] Assignee must be a project member (`400` T-001)
-- [ ] Only admin can unassign DONE tasks
-- [ ] `DELETE /api/tasks/:id` — admin or creator can delete
+- [ ] `GET /api/projects/:pid/tasks` — lists tasks in the project (members only); filters by status/priority/assigneeId work; sort and pagination work
+- [ ] `POST /api/projects/:pid/tasks` — creates task with title, description, status (default TODO), priority (default MEDIUM), dueDate, assigneeId; auto-sets creator; returns `201`
+- [ ] `POST /api/projects/:pid/tasks` — assigning a non-member returns `400` T-001
+- [ ] `GET /api/tasks/:id` — returns the task (scoped to project membership); non-member gets `404` T-002
+- [ ] `DELETE /api/tasks/:id` — ADMIN or creator can delete; MEMBER who is not the creator gets `403` Z-002
+- [ ] Task deletion is a hard delete (record removed from database)
+
+---
+
+## Phase 5b: Task Updates & State Machine
+
+### Goal
+Task field updates, status transitions with state machine enforcement, and administrative status operations (reopening, unassigning DONE tasks).
+
+### Dependencies
+- Phase 5a (tasks must exist before they can be updated)
+
+### Documents
+- `tasks-module.md` (update section, state machine, assignee rules)
+- `error-catalogue.md`
+- `constitution.md` (§12)
+
+### Deliverables
+- DTO: `UpdateTaskDto`
+- `TasksService.update` — update title, description, priority, dueDate, assigneeId, and/or status on an existing task
+- `StatusTransitionValidator` — enforces the state machine rules:
+  - Allowed: TODO↔IN_PROGRESS↔DONE (happy path), IN_PROGRESS↔TODO (rollback)
+  - Blocked: TODO→DONE directly (400 T-003)
+  - Admin-only: DONE→TODO and DONE→IN_PROGRESS (403 T-004 for MEMBER)
+  - Assignee required before TODO→IN_PROGRESS (400 T-005)
+- Assignee changes: reassign to any project member; setting to null (unassign) is ADMIN-only when task is DONE; any member can unassign non-DONE tasks
+- `TasksRepository` — `update`, `findById` (additions to Phase 5a repository)
+
+### Checklist
+- [ ] `PATCH /api/tasks/:id` — any project member can update title, description, priority, dueDate
+- [ ] `TODO → IN_PROGRESS` succeeds (happy path forward)
+- [ ] `TODO → DONE` directly returns `400` T-003 (skip not allowed)
+- [ ] `IN_PROGRESS → DONE` succeeds
+- [ ] `IN_PROGRESS → TODO` succeeds (rollback allowed)
+- [ ] `DONE → TODO` or `DONE → IN_PROGRESS` — ADMIN succeeds, MEMBER gets `403` T-004
+- [ ] Unassigned task moving to `IN_PROGRESS` returns `400` T-005
+- [ ] Any member can reassign a non-DONE task to another project member
+- [ ] Only ADMIN can unassign (set assigneeId to null) a DONE task
 
 ---
 
@@ -302,7 +401,7 @@ Full task lifecycle, state machine enforcement, and assignment.
 Reproducible seed data for development and testing.
 
 ### Dependencies
-- Phase 5 (all tables and modules exist)
+- Phases 5a–5b (all tables and modules exist)
 
 ### Documents
 - `seed-data.md`
@@ -321,30 +420,66 @@ Reproducible seed data for development and testing.
 
 ---
 
-## Phase 7: Full Test Suite
+## Phase 7a: Test Infrastructure & Unit Tests
 
 ### Goal
-All unit, integration, and E2E tests pass.
+Reusable test infrastructure and comprehensive unit tests for every backend service (mocked repositories).
 
 ### Dependencies
-- Phases 1a–1d, 2a–2b, 3–6
+- Phases 1a–1d, 2a–2b, 3a–3b, 4a–4b, 5a–5b, 6 (all backend code must exist)
 
 ### Documents
 - `test-plan.md`
 - `constitution.md` (§26–28)
 
 ### Deliverables
-- Unit tests for every service (mocked repositories)
-- Integration tests for every endpoint (success + at least one error case)
-- Auth tests covering both presence and absence of required roles
+- Jest config with test database isolation, global setup/teardown
+- Test factories and helpers for every entity (createUser, createProject, createTask, etc.)
+- Unit tests for AuthService (token creation, validation, refresh rotation, revocation)
+- Unit tests for UsersService (CRUD, role changes, password changes, self-deletion prevention)
+- Unit tests for ProjectsService (CRUD, membership add/remove)
+- Unit tests for TasksService (CRUD, all state transitions, assignee validation, permission checks)
+- Unit tests for AuditService (log creation, list queries)
+
+### Checklist
+- [ ] `npm run test` passes (all unit tests)
+- [ ] Auth unit tests cover token creation, validation, refresh rotation, revocation
+- [ ] User unit tests cover CRUD, role/password changes, self-deletion prevention
+- [ ] Project unit tests cover CRUD, membership add/remove
+- [ ] Task unit tests cover CRUD, all allowed/blocked state transitions, permission checks
+- [ ] Audit unit tests cover log creation and list queries
+- [ ] Test factories generate valid entities for every model
+
+---
+
+## Phase 7b: Integration & E2E Tests
+
+### Goal
+Full integration test suite covering all API endpoints against a real database, plus auth role coverage.
+
+### Dependencies
+- Phase 7a (test infrastructure, factories, helpers)
+- Phases 1a–1d, 2a–2b, 3a–3b, 4a–4b, 5a–5b, 6 (all backend endpoints must exist)
+
+### Documents
+- `test-plan.md`
+- `constitution.md` (§26–28)
+
+### Deliverables
 - Test database (`taskflow_test`) with migration + seed before each suite
+- Integration tests for every endpoint (success path + at least one error/edge case)
+- TC-01 through TC-10 as defined in test-plan.md
+- Auth-specific tests: verify both 401 (unauthenticated) and 403 (forbidden) for every protected endpoint
+- Negative tests: invalid data, missing fields, duplicate emails, stale/expired tokens, etc.
 
 ### Checklist
 - [ ] All 10 test cases (TC-01 through TC-10) pass
-- [ ] `npm run test` passes (unit tests)
 - [ ] `npm run test:e2e` passes (integration/E2E)
 - [ ] Auth tests verify both 401 and 403 cases for protected endpoints
 - [ ] Test database is isolated from development database
+- [ ] Each endpoint has at least one success and one error test
+- [ ] Token refresh, rotation, and revocation integration tests pass
+- [ ] State machine integration tests pass for all allowed and blocked transitions
 
 ---
 
@@ -392,7 +527,7 @@ Dashboard layout with project CRUD and member management.
 
 ### Dependencies
 - Phase 8 (frontend auth)
-- Phase 4 (backend projects API)
+- Phases 4a–4b (backend projects API)
 
 ### Documents
 - `frontend-structure.md`
@@ -427,7 +562,7 @@ Task board, task detail, and task CRUD with state machine enforcement.
 
 ### Dependencies
 - Phase 9 (project pages)
-- Phase 5 (backend tasks API)
+- Phases 5a–5b (backend tasks API)
 
 ### Documents
 - `frontend-structure.md`
@@ -463,7 +598,7 @@ User management UI for admins, error boundaries, loading states, and polish.
 
 ### Dependencies
 - Phase 8 (auth)
-- Phase 3 (backend users API)
+- Phases 3a–3b (backend users API)
 
 ### Documents
 - `frontend-structure.md`

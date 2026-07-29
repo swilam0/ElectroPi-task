@@ -13,7 +13,7 @@
 |----------|-----------------|-------|--------|
 | GET /projects/:pid/tasks | ❌ 401 | ✅ (if member) | ✅ (if member) |
 | POST /projects/:pid/tasks | ❌ 401 | ✅ | ✅ |
-| GET /tasks/:id | ❌ 401 | ✅ (if member) | ✅ (if member) |
+| GET /tasks/:id | ❌ 401 | ✅ | ✅ (if member) |
 | PATCH /tasks/:id | ❌ 401 | ✅ | ✅ |
 | DELETE /tasks/:id | ❌ 401 | ✅ | ✅ (own tasks) |
 
@@ -206,8 +206,7 @@ Get a single task.
 **Error Cases:**
 | Code | HTTP | Condition |
 |------|------|-----------|
-| P-001 | 403 | Not a member of the task's parent project |
-| T-002 | 404 | Task not found |
+| T-002 | 404 | Task not found (or not a member — existence-avoidance) |
 
 ---
 

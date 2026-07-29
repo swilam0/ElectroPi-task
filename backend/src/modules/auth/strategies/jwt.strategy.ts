@@ -17,7 +17,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     });
   }
 
-  async validate(payload: { sub: string; email: string; role: string; jti: string }) {
+  async validate(payload: { sub: string; email: string; role: string; jti: string; exp: number }) {
     const blacklisted = await this.redisService.get(`blacklist:${payload.jti}`);
     if (blacklisted) {
       throw new UnauthorizedException({
@@ -27,6 +27,6 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       });
     }
 
-    return { id: payload.sub, email: payload.email, role: payload.role };
+    return { id: payload.sub, email: payload.email, role: payload.role, jti: payload.jti, exp: payload.exp };
   }
 }

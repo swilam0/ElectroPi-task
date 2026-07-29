@@ -20,10 +20,13 @@ import { JwtStrategy } from './strategies/jwt.strategy';
       }),
       inject: [ConfigService],
     }),
-    ThrottlerModule.forRoot([{
-      ttl: 60000,
-      limit: 10,
-    }]),
+    ThrottlerModule.forRootAsync({
+      inject: [ConfigService],
+      useFactory: (configService: ConfigService) => [{
+        ttl: configService.get<number>('THROTTLE_TTL', 60000),
+        limit: configService.get<number>('THROTTLE_LIMIT', 10),
+      }],
+    }),
   ],
   controllers: [AuthController],
   providers: [AuthService, AuthRepository, JwtStrategy],

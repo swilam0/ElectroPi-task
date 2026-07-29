@@ -72,7 +72,7 @@ Authenticate with email and password.
 - Use bcrypt.compare() to verify password
 - Check for account lockout (10 failed attempts = 15 min cooldown)
 - Generate access token (15 min) and refresh token (7 days)
-- Store bcrypt hash of refresh token in database
+- Store SHA-256 hash of refresh token in database
 
 **Success Response (200):**
 ```json

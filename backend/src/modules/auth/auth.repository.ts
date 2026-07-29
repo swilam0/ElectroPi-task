@@ -9,6 +9,10 @@ export class AuthRepository {
     return this.prisma.user.findUnique({ where: { email } });
   }
 
+  async findById(id: string) {
+    return this.prisma.user.findUnique({ where: { id } });
+  }
+
   async createUser(email: string, password: string, name: string) {
     return this.prisma.user.create({
       data: { email, password, name },
@@ -36,6 +40,24 @@ export class AuthRepository {
         tokenHash,
         expiresAt,
       },
+    });
+  }
+
+  async findRefreshTokenByHash(tokenHash: string) {
+    return this.prisma.refreshToken.findUnique({
+      where: { tokenHash },
+    });
+  }
+
+  async deleteRefreshToken(id: string) {
+    return this.prisma.refreshToken.delete({
+      where: { id },
+    });
+  }
+
+  async deleteAllRefreshTokensForUser(userId: string) {
+    return this.prisma.refreshToken.deleteMany({
+      where: { userId },
     });
   }
 }
