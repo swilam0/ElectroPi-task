@@ -126,41 +126,76 @@ JWT authentication guard, role-based authorization guard, and reusable decorator
 
 ---
 
-## Phase 2: Auth Module
+## Phase 2a: Registration, Login & JWT Strategy
 
 ### Goal
-Complete authentication system — register, login, token refresh, logout, current user.
+User registration with anti-enumeration, login with credential verification and account lockout, and the JWT strategy that underpins all authenticated requests.
 
 ### Dependencies
 - Phases 1a–1d
 
 ### Documents
-- `auth-module.md`
-- `error-catalogue.md`
-- `threatmodel.md` (T-01, T-02, T-09, T-10)
-- `constitution.md` (§1–5, §8–9)
+- `auth-module.md` (register, login sections)
+- `error-catalogue.md` (A-003, A-004, A-005, A-006)
+- `threatmodel.md` (T-01, T-10)
+- `constitution.md` (§1–3, §8–9)
 - `002-auth-strategy.md`
 
 ### Deliverables
-- `AuthModule` with controller, service, repository
-- Passport JWT strategy (`jwt.strategy.ts`)
-- DTOs: `RegisterDto`, `LoginDto`, `RefreshDto`
-- `AuthService`: register (bcrypt hash, anti-enumeration), login (credential check, lockout, token pair), refresh (rotation, theft detection), logout (delete refresh, blacklist access jti in Redis)
-- `AuthRepository`: user lookup by email, create user, refresh token CRUD
-- Rate limiting via `@nestjs/throttler` on auth endpoints
-- Account lockout: 10 consecutive failures → 423 A-006 for 15 min
+- `AuthModule` with controller, service, repository (user methods only)
+- Passport JWT strategy (`jwt.strategy.ts`) — configures secret, token extraction from `Authorization: Bearer`, and validation callback that checks Redis blacklist
+- DTOs: `RegisterDto`, `LoginDto`
+- `AuthService.register` — bcrypt hash, create user, return generic message (same response whether email is new or already exists)
+- `AuthService.login` — lookup user by email, bcrypt.compare, account lockout check, increment failed attempts, generate access + refresh token pair
+- `AuthRepository` — `findByEmail`, `createUser`, `updateFailedAttempts`, `setLockedUntil`
+- Rate limiting via `@nestjs/throttler` on register and login endpoints (10 req / 60s)
+- Account lockout: 10 consecutive failed attempts locks account for 15 min (A-006)
+- `AuthModule` registers PassportModule and JwtModule with secrets from env config
 
 ### Checklist
-- [ ] `POST /api/auth/register` — `200` with generic message (same for new and existing email)
-- [ ] `POST /api/auth/login` — valid credentials return `200` with `{ user, accessToken, refreshToken }`
-- [ ] `POST /api/auth/login` — wrong password returns `401` A-004 (generic message)
-- [ ] `POST /api/auth/login` — 10 failed attempts → account locked (`423` A-006)
-- [ ] `POST /api/auth/refresh` — valid token returns new `{ accessToken, refreshToken }` pair
-- [ ] `POST /api/auth/refresh` — revoked/reused token returns `401` A-007
-- [ ] `POST /api/auth/refresh` — expired/malformed token returns `401` A-008
-- [ ] `POST /api/auth/logout` — `200`, refresh token deleted from DB, access jti in Redis
-- [ ] `GET /api/auth/me` — returns current user profile
-- [ ] Rate limiting: >10 requests per 60s returns `429` G-002
+- [ ] `POST /api/auth/register` with valid data returns `200` with `{ "message": "If the email is not already registered, an account has been created." }`
+- [ ] `POST /api/auth/register` with an existing email returns the same `200` message (anti-enumeration)
+- [ ] `POST /api/auth/login` with valid credentials returns `200` with `{ user, accessToken, refreshToken }`
+- [ ] `POST /api/auth/login` with wrong password returns `401` with code `A-004` and generic `"Invalid credentials"`
+- [ ] `POST /api/auth/login` with non-existent email returns `401` with same `A-004` (identical message, no enumeration)
+- [ ] `POST /api/auth/login` — 10 consecutive failures locks the account, returns `423` A-006
+- [ ] Locked account returns `423` A-006 even with correct password (until 15 min cooldown)
+- [ ] `POST /api/auth/register` and `/api/auth/login` return `429` G-002 when rate limit exceeded
+
+---
+
+## Phase 2b: Token Refresh, Logout & Current User
+
+### Goal
+Token refresh with rotation and theft detection, logout with full session invalidation, and current user profile retrieval.
+
+### Dependencies
+- Phase 2a (login must work to produce tokens; JWT strategy and AuthModule already registered)
+
+### Documents
+- `auth-module.md` (refresh, logout, me sections)
+- `error-catalogue.md` (A-001, A-007, A-008)
+- `threatmodel.md` (T-02, T-09)
+- `constitution.md` (§4–5)
+
+### Deliverables
+- DTO: `RefreshDto`
+- `AuthService.refresh` — hash the incoming refresh token, lookup in DB, verify JWT signature and expiry, delete old record, issue new access + refresh pair; if old token not found (already used), invalidate ALL sessions for that user (theft detection → A-007)
+- `AuthService.logout` — delete the refresh token record from DB, add access token `jti` to Redis with TTL equal to remaining token lifetime
+- `AuthService.me` — return `{ id, email, name, role, createdAt }` from `req.user`
+- `AuthRepository` — `findRefreshTokenByHash`, `createRefreshToken`, `deleteRefreshToken`, `deleteAllRefreshTokensForUser`
+- All endpoints wired into the existing `AuthController`
+
+### Checklist
+- [ ] `POST /api/auth/refresh` with a valid refresh token returns `200` with new `{ accessToken, refreshToken }` pair
+- [ ] `POST /api/auth/refresh` — the old refresh token is invalidated (using it again returns `401` A-007 — theft detected)
+- [ ] `POST /api/auth/refresh` with an expired refresh token returns `401` A-008
+- [ ] `POST /api/auth/refresh` with a malformed refresh token returns `401` A-008
+- [ ] `POST /api/auth/logout` with a valid access token + refresh token returns `200`, refresh token is deleted from DB, access token `jti` is blacklisted in Redis
+- [ ] After logout, using the same access token on a guarded endpoint returns `401` A-001
+- [ ] After logout, using the same refresh token returns `401` A-007
+- [ ] `GET /api/auth/me` with a valid access token returns `{ id, email, name, role, createdAt }`
+- [ ] `GET /api/auth/me` without a token returns `401` A-001
 
 ---
 
@@ -170,7 +205,7 @@ Complete authentication system — register, login, token refresh, logout, curre
 User CRUD and role management (admin-only + self-service password change).
 
 ### Dependencies
-- Phase 2 (all endpoints behind JwtAuthGuard)
+- Phases 2a–2b (all endpoints behind JwtAuthGuard; JWT auth and guards required)
 
 ### Documents
 - `users-module.md`
@@ -200,7 +235,7 @@ User CRUD and role management (admin-only + self-service password change).
 Project CRUD and membership management with role-based access.
 
 ### Dependencies
-- Phase 2 (JwtAuthGuard)
+- Phases 2a–2b (JwtAuthGuard)
 - Phase 3 (user lookup for membership)
 
 ### Documents
@@ -232,7 +267,7 @@ Project CRUD and membership management with role-based access.
 Full task lifecycle, state machine enforcement, and assignment.
 
 ### Dependencies
-- Phase 2 (JwtAuthGuard)
+- Phases 2a–2b (JwtAuthGuard)
 - Phase 4 (project membership checks)
 
 ### Documents
@@ -292,7 +327,7 @@ Reproducible seed data for development and testing.
 All unit, integration, and E2E tests pass.
 
 ### Dependencies
-- Phases 1a–1d, 2–6
+- Phases 1a–1d, 2a–2b, 3–6
 
 ### Documents
 - `test-plan.md`
@@ -319,7 +354,7 @@ All unit, integration, and E2E tests pass.
 Bootable Next.js app with authentication screens and auth state management.
 
 ### Dependencies
-- Phase 2 (backend auth API)
+- Phases 2a–2b (full backend auth API must be available)
 
 ### Documents
 - `frontend-structure.md`

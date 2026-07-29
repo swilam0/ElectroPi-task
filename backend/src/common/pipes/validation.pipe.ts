@@ -18,22 +18,21 @@ export class ValidationPipe implements PipeTransform {
     const errors = await validate(object);
 
     if (errors.length > 0) {
-      const fieldErrors: Record<string, string> = {};
-      this.flattenErrors(errors, fieldErrors);
-      throw new BadRequestException({
-        status: 'fail',
-        data: fieldErrors,
-      });
+      const messages: string[] = [];
+      this.flattenErrors(errors, messages);
+      throw new BadRequestException(messages);
     }
 
     return object;
   }
 
-  private flattenErrors(errors: ValidationError[], result: Record<string, string>, parent?: string) {
+  private flattenErrors(errors: ValidationError[], result: string[], parent?: string) {
     for (const error of errors) {
       const property = parent ? `${parent}.${error.property}` : error.property;
       if (error.constraints) {
-        result[property] = Object.values(error.constraints)[0];
+        for (const msg of Object.values(error.constraints)) {
+          result.push(`${property}: ${msg}`);
+        }
       }
       if (error.children && error.children.length > 0) {
         this.flattenErrors(error.children, result, property);

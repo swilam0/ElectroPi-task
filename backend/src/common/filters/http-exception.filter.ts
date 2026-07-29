@@ -26,7 +26,7 @@ export class HttpExceptionFilter implements ExceptionFilter {
           const fieldErrors: Record<string, string> = {};
           for (const msg of message) {
             if (typeof msg === 'string') {
-              const parts = msg.split(' ');
+              const parts = msg.split(': ');
               const field = parts[0]?.toLowerCase() ?? 'unknown';
               fieldErrors[field] = msg;
             }
@@ -41,10 +41,12 @@ export class HttpExceptionFilter implements ExceptionFilter {
       const code = (exceptionResponse as Record<string, unknown>)?.code as string | undefined;
       const respMessage = (exceptionResponse as Record<string, unknown>)?.message as string | undefined;
 
+      const effectiveCode = code ?? (status === HttpStatus.TOO_MANY_REQUESTS ? ErrorCodes.G_002.code : undefined);
+
       return response.status(status).json({
         status: 'error',
         message: respMessage ?? exception.message,
-        ...(code ? { code } : {}),
+        ...(effectiveCode ? { code: effectiveCode } : {}),
       });
     }
 
