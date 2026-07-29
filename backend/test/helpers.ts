@@ -2,32 +2,14 @@ import { INestApplication, ValidationPipe } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import request from 'supertest';
 import * as bcrypt from 'bcrypt';
-import { config } from 'dotenv';
-import { ThrottlerGuard } from '@nestjs/throttler';
 import { AppModule } from '../src/app.module';
 import { HttpExceptionFilter } from '../src/common/filters/http-exception.filter';
 import { PrismaService } from '../src/prisma/prisma.service';
 
-config({ path: require('path').resolve(__dirname, '../.env') });
-
-function getTestDbUrl(): string {
-  const mainUrl = process.env.DATABASE_URL || 'postgresql://postgres:0000@localhost:5432/taskflow?schema=public';
-  return mainUrl.replace('/taskflow?', '/taskflow_test?');
-}
-
-export function setTestEnv(): void {
-  process.env.DATABASE_URL = getTestDbUrl();
-}
-
 export async function createTestApp(): Promise<INestApplication> {
-  setTestEnv();
-
   const moduleFixture: TestingModule = await Test.createTestingModule({
     imports: [AppModule],
-  })
-    .overrideProvider(ThrottlerGuard)
-    .useValue({ canActivate: () => true })
-    .compile();
+  }).compile();
 
   const app = moduleFixture.createNestApplication();
   app.setGlobalPrefix('api');

@@ -1,18 +1,19 @@
 import { randomUUID } from 'crypto';
+import { Priority, Role, TaskStatus, User } from '@prisma/client';
 
-export function createMockUser(overrides: Record<string, unknown> = {}) {
+export function createMockUser(overrides: Record<string, unknown> = {}): User {
   return {
     id: randomUUID(),
     email: 'test@example.com',
     password: '$2b$12$abcdefghijklmnopqrstuvwxyz12345678901234567890',
     name: 'Test User',
-    role: 'MEMBER',
+    role: Role.MEMBER,
     failedLoginAttempts: 0,
     lockedUntil: null,
     createdAt: new Date('2026-01-01'),
     updatedAt: new Date('2026-01-01'),
     ...overrides,
-  };
+  } as User;
 }
 
 export function createMockProject(overrides: Record<string, unknown> = {}) {
@@ -50,8 +51,8 @@ export function createMockTask(overrides: Record<string, unknown> = {}) {
     id: randomUUID(),
     title: 'Test Task',
     description: 'A test task',
-    status: 'TODO',
-    priority: 'MEDIUM',
+    status: TaskStatus.TODO,
+    priority: Priority.MEDIUM,
     dueDate: new Date('2026-06-01'),
     projectId: randomUUID(),
     createdById: creator.id,

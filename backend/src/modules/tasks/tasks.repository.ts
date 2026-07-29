@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { Prisma, Priority, TaskStatus } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 
 @Injectable()
@@ -18,7 +19,7 @@ export class TasksRepository {
       data: {
         title: data.title,
         description: data.description,
-        priority: data.priority as any,
+        priority: data.priority as Priority,
         dueDate: data.dueDate ? new Date(data.dueDate) : undefined,
         assigneeId: data.assigneeId,
         projectId: data.projectId,
@@ -51,14 +52,14 @@ export class TasksRepository {
     const { page, limit, search, sort, order, status, priority, assigneeId } = params;
     const skip = (page - 1) * limit;
 
-    const where: any = { projectId };
+    const where: Prisma.TaskWhereInput = { projectId };
 
     if (status) {
-      where.status = status;
+      where.status = status as TaskStatus;
     }
 
     if (priority) {
-      where.priority = priority;
+      where.priority = priority as Priority;
     }
 
     if (assigneeId) {
@@ -121,11 +122,11 @@ export class TasksRepository {
       assigneeId?: string | null;
     },
   ) {
-    const updateData: any = {};
+    const updateData: Prisma.TaskUncheckedUpdateInput = {};
     if (data.title !== undefined) updateData.title = data.title;
     if (data.description !== undefined) updateData.description = data.description;
-    if (data.priority !== undefined) updateData.priority = data.priority;
-    if (data.status !== undefined) updateData.status = data.status;
+    if (data.priority !== undefined) updateData.priority = data.priority as Priority;
+    if (data.status !== undefined) updateData.status = data.status as TaskStatus;
     if (data.dueDate !== undefined) updateData.dueDate = data.dueDate;
     if (data.assigneeId !== undefined) updateData.assigneeId = data.assigneeId;
 

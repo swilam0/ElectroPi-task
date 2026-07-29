@@ -1,5 +1,6 @@
 import { ExecutionContext, Injectable, UnauthorizedException } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
+import { JwtPayload } from '../interfaces/jwt-payload.interface';
 import { RedisService } from '../../redis/redis.service';
 
 @Injectable()
@@ -12,7 +13,7 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
     const result = await super.canActivate(context);
     if (!result) return false;
 
-    const request = context.switchToHttp().getRequest();
+    const request = context.switchToHttp().getRequest<{ user: JwtPayload }>();
     const user = request.user;
 
     if (user?.jti) {
@@ -29,14 +30,14 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
     return true;
   }
 
-  handleRequest<TUser = any>(err: any, user: TUser, _info: any, _context: ExecutionContext, _status?: any): TUser {
-    if (err || !user) {
-      throw new UnauthorizedException({
-        status: 'error',
-        message: 'Authentication required',
-        code: 'A-001',
-      });
-    }
-    return user;
+  handleRequest<TUser = JwtPayload>(err: Error | null, user: TUser | false, _info: object): TUser {
+  if (err || !user) {
+    throw new UnauthorizedException({
+      status: 'error',
+      message: 'Authentication required',
+      code: 'A-001',
+    });
   }
+  return user as TUser;
+}
 }

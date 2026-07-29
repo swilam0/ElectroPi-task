@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 
 @Injectable()
@@ -43,7 +44,7 @@ export class ProjectsRepository {
     const { page, limit, search, sort, order, userId, isAdmin } = params;
     const skip = (page - 1) * limit;
 
-    const where: any = {};
+    const where: Prisma.ProjectWhereInput = {};
 
     if (search) {
       where.title = { contains: search, mode: 'insensitive' };

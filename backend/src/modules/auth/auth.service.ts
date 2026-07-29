@@ -6,6 +6,8 @@ import { createHash, randomUUID } from 'crypto';
 import { RedisService } from '../../redis/redis.service';
 import { AuthRepository } from './auth.repository';
 import { RegisterDto } from './dto/register.dto';
+import type { StringValue } from 'ms';
+
 
 @Injectable()
 export class AuthService {
@@ -92,7 +94,7 @@ export class AuthService {
       { sub: user.id, jti: refreshJti },
       {
         secret: this.configService.get<string>('JWT_REFRESH_SECRET'),
-        expiresIn: this.configService.get<string>('JWT_REFRESH_EXPIRES_IN', '7d') as any,
+        expiresIn: this.configService.get<string>('JWT_REFRESH_EXPIRES_IN', '7d') as StringValue,
       },
     );
 
@@ -161,7 +163,7 @@ export class AuthService {
       { sub: payload.sub, jti: newRefreshJti },
       {
         secret: this.configService.get<string>('JWT_REFRESH_SECRET'),
-        expiresIn: this.configService.get<string>('JWT_REFRESH_EXPIRES_IN', '7d') as any,
+        expiresIn: this.configService.get<string>('JWT_REFRESH_EXPIRES_IN', '7d') as StringValue,
       },
     );
 

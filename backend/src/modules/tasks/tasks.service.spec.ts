@@ -1,5 +1,6 @@
 import { BadRequestException, ForbiddenException, NotFoundException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
+import { Priority, TaskStatus } from '@prisma/client';
 import { createMockProject, createMockTask } from '../../common/test/factories';
 import { ProjectsRepository } from '../projects/projects.repository';
 import { CreateTaskDto } from './dto/create-task.dto';
@@ -160,7 +161,7 @@ describe('TasksService', () => {
   });
 
   describe('update', () => {
-    const task = createMockTask({ status: 'TODO', assigneeId: 'assignee-1', createdById: 'creator-1' });
+    const task = createMockTask({ status: TaskStatus.TODO, assigneeId: 'assignee-1', createdById: 'creator-1' });
 
     it('should allow any member to update title/description/priority/dueDate', async () => {
       tasksRepository.findById.mockResolvedValue(task);
@@ -176,7 +177,7 @@ describe('TasksService', () => {
     it('should allow TODO→IN_PROGRESS transition (happy path forward)', async () => {
       tasksRepository.findById.mockResolvedValue(task);
       projectsRepository.isMember.mockResolvedValue(true);
-      tasksRepository.update.mockResolvedValue({ ...task, status: 'IN_PROGRESS' });
+      tasksRepository.update.mockResolvedValue({ ...task, status: TaskStatus.IN_PROGRESS });
 
       const dto: UpdateTaskDto = { status: 'IN_PROGRESS' };
       const result = await service.update('assignee-1', 'MEMBER', task.id, dto);
@@ -185,10 +186,10 @@ describe('TasksService', () => {
     });
 
     it('should allow IN_PROGRESS→TODO rollback', async () => {
-      const inProgressTask = { ...task, status: 'IN_PROGRESS', assigneeId: 'assignee-1' };
+      const inProgressTask = { ...task, status: TaskStatus.IN_PROGRESS, assigneeId: 'assignee-1' };
       tasksRepository.findById.mockResolvedValue(inProgressTask);
       projectsRepository.isMember.mockResolvedValue(true);
-      tasksRepository.update.mockResolvedValue({ ...inProgressTask, status: 'TODO' });
+      tasksRepository.update.mockResolvedValue({ ...inProgressTask, status: TaskStatus.TODO });
 
       const dto: UpdateTaskDto = { status: 'TODO' };
       const result = await service.update('assignee-1', 'MEMBER', task.id, dto);
@@ -197,10 +198,10 @@ describe('TasksService', () => {
     });
 
     it('should allow IN_PROGRESS→DONE transition', async () => {
-      const inProgressTask = { ...task, status: 'IN_PROGRESS', assigneeId: 'assignee-1' };
+      const inProgressTask = { ...task, status: TaskStatus.IN_PROGRESS, assigneeId: 'assignee-1' };
       tasksRepository.findById.mockResolvedValue(inProgressTask);
       projectsRepository.isMember.mockResolvedValue(true);
-      tasksRepository.update.mockResolvedValue({ ...inProgressTask, status: 'DONE' });
+      tasksRepository.update.mockResolvedValue({ ...inProgressTask, status: TaskStatus.DONE });
 
       const dto: UpdateTaskDto = { status: 'DONE' };
       const result = await service.update('assignee-1', 'MEMBER', task.id, dto);
@@ -221,7 +222,7 @@ describe('TasksService', () => {
     });
 
     it('should only allow ADMIN to reopen DONE tasks (T-004 for MEMBER)', async () => {
-      const doneTask = { ...task, status: 'DONE' };
+      const doneTask = { ...task, status: TaskStatus.DONE };
       tasksRepository.findById.mockResolvedValue(doneTask);
       projectsRepository.isMember.mockResolvedValue(true);
 
@@ -234,9 +235,9 @@ describe('TasksService', () => {
     });
 
     it('should allow ADMIN to reopen DONE tasks', async () => {
-      const doneTask = { ...task, status: 'DONE', assigneeId: 'admin-id' };
+      const doneTask = { ...task, status: TaskStatus.DONE, assigneeId: 'admin-id' };
       tasksRepository.findById.mockResolvedValue(doneTask);
-      tasksRepository.update.mockResolvedValue({ ...doneTask, status: 'TODO' });
+      tasksRepository.update.mockResolvedValue({ ...doneTask, status: TaskStatus.TODO });
 
       const dto: UpdateTaskDto = { status: 'TODO' };
       const result = await service.update('admin-id', 'ADMIN', task.id, dto);
@@ -272,7 +273,7 @@ describe('TasksService', () => {
     });
 
     it('should allow ADMIN to unassign a DONE task', async () => {
-      const doneTask = { ...task, status: 'DONE' };
+      const doneTask = { ...task, status: TaskStatus.DONE };
       tasksRepository.findById.mockResolvedValue(doneTask);
       tasksRepository.update.mockResolvedValue({ ...doneTask, assigneeId: null });
 
@@ -283,7 +284,7 @@ describe('TasksService', () => {
     });
 
     it('should block MEMBER from unassigning a DONE task', async () => {
-      const doneTask = { ...task, status: 'DONE' };
+      const doneTask = { ...task, status: TaskStatus.DONE };
       tasksRepository.findById.mockResolvedValue(doneTask);
       projectsRepository.isMember.mockResolvedValue(true);
 

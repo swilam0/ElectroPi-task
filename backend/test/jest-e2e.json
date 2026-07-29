@@ -5,6 +5,7 @@
   "transform": {
     "^.+\\.(t|j)s$": "ts-jest"
   },
+  "setupFiles": ["<rootDir>/jest-setup.ts"],
   "globalSetup": "<rootDir>/global-setup.ts",
   "maxWorkers": 1
 }

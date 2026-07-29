@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { Prisma, Role } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 
 @Injectable()
@@ -14,7 +15,7 @@ export class UsersRepository {
     const { page, limit, search, role } = params;
     const skip = (page - 1) * limit;
 
-    const where: any = {};
+    const where: Prisma.UserWhereInput = {};
 
     if (search) {
       where.OR = [
@@ -24,7 +25,7 @@ export class UsersRepository {
     }
 
     if (role) {
-      where.role = role;
+      where.role = role as Role;
     }
 
     const select = {
@@ -102,7 +103,7 @@ export class UsersRepository {
   async updateRole(id: string, role: string) {
     return this.prisma.user.update({
       where: { id },
-      data: { role: role as any },
+      data: { role: role as Role },
       select: {
         id: true,
         email: true,

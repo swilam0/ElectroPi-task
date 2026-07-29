@@ -7,6 +7,7 @@ import { AuthController } from './auth.controller';
 import { AuthRepository } from './auth.repository';
 import { AuthService } from './auth.service';
 import { JwtStrategy } from './strategies/jwt.strategy';
+import type { StringValue } from 'ms';
 
 @Module({
   imports: [
@@ -15,18 +16,15 @@ import { JwtStrategy } from './strategies/jwt.strategy';
       useFactory: (configService: ConfigService) => ({
         secret: configService.get<string>('JWT_SECRET'),
         signOptions: {
-          expiresIn: configService.get<string>('JWT_EXPIRES_IN', '15m') as any,
+          expiresIn: configService.get<string>('JWT_EXPIRES_IN', '15m') as StringValue,
         },
       }),
       inject: [ConfigService],
     }),
-    ThrottlerModule.forRootAsync({
-      inject: [ConfigService],
-      useFactory: (configService: ConfigService) => [{
-        ttl: configService.get<number>('THROTTLE_TTL', 60000),
-        limit: configService.get<number>('THROTTLE_LIMIT', 10),
-      }],
-    }),
+    ThrottlerModule.forRoot([{
+      ttl: Number(process.env.THROTTLE_TTL || 60000),
+      limit: Number(process.env.THROTTLE_LIMIT || 10),
+    }]),
   ],
   controllers: [AuthController],
   providers: [AuthService, AuthRepository, JwtStrategy],

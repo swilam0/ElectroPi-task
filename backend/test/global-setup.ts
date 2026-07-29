@@ -14,7 +14,7 @@ export default async function globalSetup() {
   const testDbUrl = getTestDbUrl();
 
   try {
-    execSync('createdb taskflow_test 2>/dev/null || true', { shell: true, stdio: 'pipe' });
+    execSync('createdb taskflow_test 2>/dev/null || true', { shell: true as any, stdio: 'pipe' });
   } catch {
     // database may already exist
   }
@@ -22,6 +22,6 @@ export default async function globalSetup() {
   execSync(`DATABASE_URL="${testDbUrl}" npx prisma migrate deploy`, {
     stdio: 'inherit',
     cwd: path.resolve(__dirname, '..'),
-    shell: true,
+    shell: true as any,
   });
 }
