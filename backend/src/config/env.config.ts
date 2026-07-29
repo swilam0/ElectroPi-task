@@ -17,18 +17,18 @@ class EnvironmentVariables {
 
   @IsString()
   @MinLength(1)
-  DATABASE_URL: string;
+  DATABASE_URL!: string;
 
   @IsString()
   REDIS_URL: string = 'redis://localhost:6379';
 
   @IsString()
   @MinLength(32)
-  JWT_SECRET: string;
+  JWT_SECRET!: string;
 
   @IsString()
   @MinLength(32)
-  JWT_REFRESH_SECRET: string;
+  JWT_REFRESH_SECRET!: string;
 
   @IsString()
   JWT_EXPIRES_IN: string = '15m';

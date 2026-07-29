@@ -83,6 +83,7 @@ model Project {
   members ProjectMember[]
   tasks   Task[]
 
+  @@index([createdById])
   @@map("projects")
 }
 
@@ -126,6 +127,7 @@ model Task {
   @@index([projectId])
   @@index([assigneeId])
   @@index([status])
+  @@index([projectId, status])
   @@map("tasks")
 }
 ```
