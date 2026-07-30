@@ -2,16 +2,23 @@
 
 import { isAuthenticated } from "@/lib/auth";
 import { useRouter } from "next/navigation";
-import { useEffect, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 
 export function AuthCheck({ children }: { children: ReactNode }) {
   const router = useRouter();
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    if (!isAuthenticated()) {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (mounted && !isAuthenticated()) {
       router.push("/login");
     }
-  }, [router]);
+  }, [mounted, router]);
+
+  if (!mounted) return null;
 
   if (!isAuthenticated()) {
     return null;

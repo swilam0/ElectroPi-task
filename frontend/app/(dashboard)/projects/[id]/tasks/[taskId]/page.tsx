@@ -8,8 +8,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { useParams, useRouter } from "next/navigation";
-import Link from "next/link";
 import { cn } from "@/lib/utils";
+import { BackButton } from "@/components/ui/back-button";
 import { useEffect, useState } from "react";
 import { getUser } from "@/lib/auth";
 import type { TaskStatus, Priority } from "@/types/task";
@@ -79,6 +79,7 @@ export default function TaskDetailPage() {
   const updateTask = useUpdateTask();
   const deleteTask = useDeleteTask();
 
+  const today = new Date().toISOString().split("T")[0];
   const [isEditing, setIsEditing] = useState(false);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -185,12 +186,7 @@ export default function TaskDetailPage() {
   return (
     <div className="mx-auto max-w-2xl space-y-6">
       <div className="flex items-center justify-between">
-        <Link
-          href={`/projects/${projectId}`}
-          className="text-sm text-blue-600 hover:underline"
-        >
-          &larr; Back to project
-        </Link>
+        <BackButton href={`/projects/${projectId}`} label="Back to project" />
         <div className="flex gap-2">
           {!isEditing && (
             <Button size="sm" onClick={() => setIsEditing(true)}>
@@ -282,6 +278,7 @@ export default function TaskDetailPage() {
                   type="date"
                   value={dueDate}
                   onChange={(e) => setDueDate(e.target.value)}
+                  min={today}
                 />
               </div>
               {formError && <p className="text-sm text-red-600">{formError}</p>}

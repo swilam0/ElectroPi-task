@@ -20,7 +20,6 @@ import type {
 } from "@/types/auth";
 import type { ApiSuccessResponse } from "@/types/api";
 
-setTokenGetter(getAccessToken);
 
 export function useLogin() {
   const queryClient = useQueryClient();

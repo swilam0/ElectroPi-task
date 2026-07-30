@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { isAuthenticated } from "@/lib/auth";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -81,6 +82,12 @@ export default function RegisterPage() {
             {register.isPending ? "Creating account..." : "Create Account"}
           </Button>
         </form>
+        <p className="text-sm text-gray-600">
+          Don't have an account?{" "}
+          <Link href="/login" className="text-blue-600 hover:underline">
+            Sign In
+          </Link>
+        </p>
       </CardContent>
     </Card>
   );

@@ -9,7 +9,8 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useState } from "react";
 import { AddTaskModal } from "./add-task-modal";
-
+import { Settings } from "lucide-react";
+import { BackButton } from "@/components/ui/back-button";
 
 export default function ProjectDetailPage() {
   const params = useParams();
@@ -47,14 +48,16 @@ export default function ProjectDetailPage() {
   return (
     <div className="space-y-6">
       <div>
-        <Link href="/projects" className="text-sm text-blue-600 hover:underline">
-          &larr; Back to projects
-        </Link>
+        <BackButton href="/projects" label="Back to projects" />
       </div>
 
       <Card>
-        <CardHeader>
+        <CardHeader className="flex items-center justify-between gap-4">
           <h1 className="text-2xl font-bold text-gray-900">{project.title}</h1>
+          <Link href={`/projects/${project.id}/settings`} className="flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700 border border-gray-300 rounded-md px-2 py-1 hover:bg-gray-50">
+            <Settings className="h-5 w-5 text-gray-500 hover:text-gray-700" />
+            <p>settings</p>
+          </Link>
         </CardHeader>
         <CardContent>
           <p className="mb-4 text-gray-600">
@@ -67,18 +70,29 @@ export default function ProjectDetailPage() {
         </CardContent>
       </Card>
 
-      <div className="flex gap-2">
-        <Link href={`/projects/${project.id}/settings`}>
-          <Button variant="secondary" size="sm">Settings</Button>
-        </Link>
-        <Link href={`/projects/${project.id}/members`}>
-          <Button variant="secondary" size="sm">Members</Button>
-        </Link>
+      <div>
+        <div className="mb-3 flex items-center justify-between">
+          <h2 className="text-lg font-semibold text-gray-900">Tasks</h2>
+          <Button size="sm" onClick={() => setShowAddTask(true)}>
+            Add Task
+          </Button>
+        </div>
+        <TaskBoard projectId={project.id} members={project.members} />
+        {showAddTask && (
+          <AddTaskModal
+            projectId={project.id}
+            members={project.members}
+            onClose={() => setShowAddTask(false)}
+          />
+        )}
       </div>
 
       <Card>
-        <CardHeader>
+        <CardHeader className="flex items-center justify-between">
           <h2 className="text-lg font-semibold text-gray-900">Members</h2>
+          <Link href={`/projects/${project.id}/members`}>
+            <Button variant="primary" size="sm">Manage</Button>
+          </Link>
         </CardHeader>
         <CardContent>
           {project.members.length === 0 ? (
@@ -101,22 +115,6 @@ export default function ProjectDetailPage() {
         </CardContent>
       </Card>
 
-      <div>
-        <div className="mb-3 flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-gray-900">Tasks</h2>
-          <Button size="sm" onClick={() => setShowAddTask(true)}>
-            Add Task
-          </Button>
-        </div>
-        <TaskBoard projectId={project.id} />
-        {showAddTask && (
-          <AddTaskModal
-            projectId={project.id}
-            members={project.members}
-            onClose={() => setShowAddTask(false)}
-          />
-        )}
-      </div>
     </div>
   );
 }

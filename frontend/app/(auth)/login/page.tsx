@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { isAuthenticated } from "@/lib/auth";
+import Link from "next/link";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -72,6 +73,12 @@ export default function LoginPage() {
             {login.isPending ? "Signing in..." : "Sign In"}
           </Button>
         </form>
+        <p className="text-sm text-gray-600">
+          Don't have an account?{" "}
+          <Link href="/register" className="text-blue-600 hover:underline">
+            Register
+          </Link>
+        </p>
       </CardContent>
     </Card>
   );

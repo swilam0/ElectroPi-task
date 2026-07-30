@@ -1,13 +1,15 @@
 "use client";
 
-import { useProject, useUpdateProject } from "@/hooks/use-projects";
+import { useProject, useUpdateProject, useDeleteProject } from "@/hooks/use-projects";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import { useParams, useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
-import Link from "next/link";
+import { getUser } from "@/lib/auth";
+import { BackButton } from "@/components/ui/back-button";
+import { useUiStore } from "@/stores/ui-store";
 
 export default function ProjectSettingsPage() {
   const params = useParams();
@@ -15,9 +17,15 @@ export default function ProjectSettingsPage() {
   const id = params.id as string;
   const { data, isLoading, error } = useProject(id);
   const updateProject = useUpdateProject();
+  const deleteProject = useDeleteProject();
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [formError, setFormError] = useState("");
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [confirmName, setConfirmName] = useState("");
+
+  const currentUser = getUser();
+  const isAdmin = currentUser?.role === "ADMIN";
 
   useEffect(() => {
     if (data?.data) {
@@ -63,12 +71,22 @@ export default function ProjectSettingsPage() {
     }
   };
 
+  const handleDelete = async () => {
+    try {
+      await deleteProject.mutateAsync(id);
+      setShowDeleteModal(false);
+      useUiStore.getState().addToast({ type: "success", message: "Project deleted successfully." });
+      router.push("/projects");
+    } catch (err: unknown) {
+      const apiErr = err as { message?: string };
+      useUiStore.getState().addToast({ type: "error", message: apiErr.message || "Failed to delete project." });
+    }
+  };
+
   return (
     <div className="mx-auto max-w-lg">
       <div className="mb-4">
-        <Link href={`/projects/${id}`} className="text-sm text-blue-600 hover:underline">
-          &larr; Back to project
-        </Link>
+        <BackButton href={`/projects/${id}`} label="Back to project" />
       </div>
       <Card>
         <CardHeader>
@@ -101,6 +119,71 @@ export default function ProjectSettingsPage() {
           </form>
         </CardContent>
       </Card>
+
+      {isAdmin && (
+        <Card className="mt-6 border-red-500">
+          <CardHeader>
+            <h2 className="text-lg font-semibold text-red-600">Danger Zone</h2>
+          </CardHeader>
+          <CardContent>
+            <p className="mb-4 text-sm text-gray-600">
+              This action cannot be undone. All tasks and members will be permanently deleted.
+            </p>
+            <Button
+              variant="danger"
+              className="w-full"
+              onClick={() => setShowDeleteModal(true)}
+            >
+              Delete Project
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+
+      {showDeleteModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="w-full max-w-md rounded-lg bg-white p-6 shadow-xl">
+            <div className="mb-4 flex items-center justify-between">
+              <h2 className="text-lg font-semibold text-gray-900">Delete Project</h2>
+              <button
+                onClick={() => { setShowDeleteModal(false); setConfirmName(""); }}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                ✕
+              </button>
+            </div>
+            <div className="space-y-4">
+              <p className="text-sm text-gray-600">
+                Are you sure you want to delete this project? Type the project name to confirm.
+              </p>
+              <Input
+                id="confirm-name"
+                label="Project name"
+                value={confirmName}
+                onChange={(e) => setConfirmName(e.target.value)}
+                placeholder={project.title}
+              />
+              <div className="flex justify-end gap-2">
+                <Button
+                  type="button"
+                  variant="secondary"
+                  onClick={() => { setShowDeleteModal(false); setConfirmName(""); }}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="button"
+                  variant="danger"
+                  disabled={confirmName !== project.title || deleteProject.isPending}
+                  onClick={handleDelete}
+                >
+                  {deleteProject.isPending ? "Deleting..." : "Delete"}
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

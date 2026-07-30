@@ -11,6 +11,25 @@ export function setTokenGetter(fn: () => string | null) {
   getAccessToken = fn;
 }
 
+async function tryRefresh(): Promise<boolean> {
+  const refreshToken = localStorage.getItem("refreshToken");
+  if (!refreshToken) return false;
+  try {
+    const res = await fetch(`${API_URL}/auth/refresh`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ refreshToken }),
+    });
+    const data = await res.json();
+    if (!res.ok) return false;
+    localStorage.setItem("accessToken", data.data.accessToken);
+    localStorage.setItem("refreshToken", data.data.refreshToken);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 async function request<T>(
   endpoint: string,
   options: RequestOptions = {}
@@ -49,6 +68,20 @@ async function request<T>(
   });
 
   const data = await response.json();
+
+  if (response.status === 401 && !endpoint.startsWith("/auth/refresh")) {
+    const refreshed = await tryRefresh();
+    if (refreshed) {
+      return request<T>(endpoint, options);
+    }
+    localStorage.removeItem("accessToken");
+    localStorage.removeItem("refreshToken");
+    localStorage.removeItem("user");
+    if (typeof window !== "undefined") {
+      window.location.href = "/login";
+    }
+    throw new Error("Session expired");
+  }
 
   if (!response.ok) {
     const error: Error & { code?: string; statusCode?: number } = new Error(data.message || "Request failed");

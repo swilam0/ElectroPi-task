@@ -14,8 +14,8 @@ import { Select } from "@/components/ui/select";
 import { Spinner } from "@/components/ui/spinner";
 import { getUser } from "@/lib/auth";
 import { useParams, useRouter } from "next/navigation";
-import Link from "next/link";
 import { useEffect, useState } from "react";
+import { BackButton } from "@/components/ui/back-button";
 
 export default function AdminUserDetailPage() {
   const params = useParams();
@@ -135,12 +135,7 @@ export default function AdminUserDetailPage() {
   return (
     <div className="mx-auto max-w-2xl space-y-6">
       <div className="flex items-center justify-between">
-        <Link
-          href="/admin/users"
-          className="text-sm text-blue-600 hover:underline"
-        >
-          &larr; Back to users
-        </Link>
+        <BackButton href="/admin/users" label="Back to users" />
       </div>
 
       <Card>

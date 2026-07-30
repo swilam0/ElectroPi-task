@@ -46,7 +46,7 @@ export interface UpdateProjectRequest {
 }
 
 export interface AddMemberRequest {
-  userId: string;
+  email: string;
 }
 
 export interface AddMemberResponse {

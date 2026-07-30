@@ -68,6 +68,17 @@ export function useAddMember() {
   });
 }
 
+export function useDeleteProject() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) =>
+      api.delete<ApiSuccessResponse<null>>(`/projects/${id}`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["projects"] });
+    },
+  });
+}
+
 export function useRemoveMember() {
   const queryClient = useQueryClient();
   return useMutation({

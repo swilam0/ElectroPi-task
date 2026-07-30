@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Spinner } from "@/components/ui/spinner";
 import { useUiStore } from "@/stores/ui-store";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { getUser } from "@/lib/auth";
 
 export default function ProfilePage() {
@@ -19,11 +19,24 @@ export default function ProfilePage() {
 
   const user = data?.data || currentUser;
 
-  const [name, setName] = useState(user?.name || "");
-  const [email, setEmail] = useState(user?.email || "");
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [initialName, setInitialName] = useState("");
+  const [initialEmail, setInitialEmail] = useState("");
   const [currentPw, setCurrentPw] = useState("");
   const [newPw, setNewPw] = useState("");
   const [formError, setFormError] = useState("");
+
+  useEffect(() => {
+    if (user) {
+      setName(user.name || "");
+      setEmail(user.email || "");
+      setInitialName(user.name || "");
+      setInitialEmail(user.email || "");
+    }
+  }, [user]);
+
+  const hasProfileChanges = name !== initialName || email !== initialEmail;
 
   if (isLoading) {
     return (
@@ -91,7 +104,7 @@ export default function ProfilePage() {
           <div className="flex justify-end">
             <Button
               onClick={handleSaveProfile}
-              disabled={updateUser.isPending}
+              disabled={updateUser.isPending || !hasProfileChanges}
             >
               {updateUser.isPending ? "Saving..." : "Save Profile"}
             </Button>

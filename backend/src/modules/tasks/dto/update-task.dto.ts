@@ -1,4 +1,5 @@
 import { IsIn, IsISO8601, IsOptional, IsString, IsUUID, MaxLength, MinLength } from 'class-validator';
+import { IsFutureDate } from '../../../common/decorators/is-future-date.decorator';
 
 export class UpdateTaskDto {
   @IsOptional()
@@ -20,6 +21,7 @@ export class UpdateTaskDto {
   @IsOptional()
   @IsString()
   @IsISO8601({ strict: true })
+  @IsFutureDate()
   dueDate?: string;
 
   @IsOptional()

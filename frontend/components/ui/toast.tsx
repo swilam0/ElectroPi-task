@@ -29,7 +29,7 @@ function ToastItem({
   return (
     <div
       className={cn(
-        "flex items-center gap-2 rounded-md border px-4 py-3 text-sm shadow-sm",
+        "flex items-center gap-2 rounded-md border px-4 py-3 text-sm shadow-sm animate-slide-in",
         typeStyles[type]
       )}
     >

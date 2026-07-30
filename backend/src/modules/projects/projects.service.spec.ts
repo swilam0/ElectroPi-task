@@ -33,6 +33,7 @@ describe('ProjectsService', () => {
 
     usersRepository = {
       findById: jest.fn(),
+      findByEmail: jest.fn(),
     } as any;
 
     const module: TestingModule = await Test.createTestingModule({
@@ -204,11 +205,11 @@ describe('ProjectsService', () => {
 
   describe('addMember', () => {
     const projectId = 'project-id';
-    const dto: AddMemberDto = { userId: 'user-id' };
+    const dto: AddMemberDto = { email: 'user@example.com' };
 
     it('should allow ADMIN to add a member', async () => {
       projectsRepository.findById.mockResolvedValue(createMockProject());
-      usersRepository.findById.mockResolvedValue(createMockUser());
+      usersRepository.findByEmail.mockResolvedValue(createMockUser());
       projectsRepository.findMember.mockResolvedValue(null);
       projectsRepository.addMember.mockResolvedValue(createMockProjectMember());
 
@@ -227,7 +228,7 @@ describe('ProjectsService', () => {
 
     it('should throw P-003 when user is already a member', async () => {
       projectsRepository.findById.mockResolvedValue(createMockProject());
-      usersRepository.findById.mockResolvedValue(createMockUser());
+      usersRepository.findByEmail.mockResolvedValue(createMockUser());
       projectsRepository.findMember.mockResolvedValue(createMockProjectMember());
 
       await expect(

@@ -234,7 +234,7 @@ Add a user to the project.
 **Request:**
 ```json
 {
-  "userId": "uuid"
+  "email": "user@example.com"
 }
 ```
 

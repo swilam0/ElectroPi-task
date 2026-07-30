@@ -7,8 +7,9 @@ import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import { useParams, useRouter } from "next/navigation";
 import { useState } from "react";
-import Link from "next/link";
 import { getUser } from "@/lib/auth";
+import { BackButton } from "@/components/ui/back-button";
+import { Trash2 } from "lucide-react";
 
 export default function ProjectMembersPage() {
   const params = useParams();
@@ -17,7 +18,7 @@ export default function ProjectMembersPage() {
   const { data, isLoading, error } = useProject(id);
   const addMember = useAddMember();
   const removeMember = useRemoveMember();
-  const [userId, setUserId] = useState("");
+  const [email, setEmail] = useState("");
   const [formError, setFormError] = useState("");
 
   const currentUser = getUser();
@@ -52,11 +53,11 @@ export default function ProjectMembersPage() {
 
   const handleAddMember = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!userId.trim()) return;
+    if (!email.trim()) return;
     setFormError("");
     try {
-      await addMember.mutateAsync({ projectId: id, data: { userId: userId.trim() } });
-      setUserId("");
+      await addMember.mutateAsync({ projectId: id, data: { email: email.trim() } });
+      setEmail("");
     } catch (err: unknown) {
       const apiErr = err as { message?: string; code?: string };
       if (apiErr.code === "Z-001") {
@@ -90,9 +91,7 @@ export default function ProjectMembersPage() {
   return (
     <div className="mx-auto max-w-lg">
       <div className="mb-4">
-        <Link href={`/projects/${id}`} className="text-sm text-blue-600 hover:underline">
-          &larr; Back to project
-        </Link>
+        <BackButton href={`/projects/${id}`} label="Back to project" />
       </div>
 
       <Card className="mb-6">
@@ -126,7 +125,7 @@ export default function ProjectMembersPage() {
                         onClick={() => handleRemoveMember(member.id)}
                         disabled={removeMember.isPending}
                       >
-                        Remove
+                        <Trash2 className="h-4 w-4 text-red-500" />
                       </Button>
                     )}
                   </div>
@@ -145,11 +144,12 @@ export default function ProjectMembersPage() {
           <CardContent>
             <form onSubmit={handleAddMember} className="space-y-4">
               <Input
-                id="userId"
-                label="User ID"
-                value={userId}
-                onChange={(e) => setUserId(e.target.value)}
-                placeholder="Enter the user ID to add"
+                id="email"
+                label="Email"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="Enter the user email to add"
               />
               {formError && (
                 <p className="text-sm text-red-600">{formError}</p>
@@ -157,7 +157,7 @@ export default function ProjectMembersPage() {
               {addMember.isSuccess && (
                 <p className="text-sm text-green-600">Member added.</p>
               )}
-              <Button type="submit" disabled={addMember.isPending || !userId.trim()}>
+              <Button type="submit" disabled={addMember.isPending || !email.trim()}>
                 {addMember.isPending ? "Adding..." : "Add Member"}
               </Button>
             </form>

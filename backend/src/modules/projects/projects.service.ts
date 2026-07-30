@@ -211,7 +211,7 @@ export class ProjectsService {
       });
     }
 
-    const user = await this.usersRepository.findById(dto.userId);
+    const user = await this.usersRepository.findByEmail(dto.email);
 
     if (!user) {
       throw new NotFoundException({
@@ -223,7 +223,7 @@ export class ProjectsService {
 
     const existingMember = await this.projectsRepository.findMember(
       projectId,
-      dto.userId,
+      user.id,
     );
 
     if (existingMember) {
@@ -236,7 +236,7 @@ export class ProjectsService {
 
     const membership = await this.projectsRepository.addMember(
       projectId,
-      dto.userId,
+      user.id,
     );
 
     return membership;

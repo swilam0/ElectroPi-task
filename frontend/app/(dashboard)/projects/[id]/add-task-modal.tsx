@@ -18,6 +18,7 @@ export function AddTaskModal({
   onClose: () => void;
 }) {
   const createTask = useCreateTask();
+  const today = new Date().toISOString().split("T")[0];
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [priority, setPriority] = useState<Priority>("MEDIUM");
@@ -95,6 +96,7 @@ export function AddTaskModal({
             type="date"
             value={dueDate}
             onChange={(e) => setDueDate(e.target.value)}
+            min={today}
           />
           <Select
             id="task-assignee"

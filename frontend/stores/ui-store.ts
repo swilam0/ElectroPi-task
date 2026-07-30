@@ -16,7 +16,7 @@ interface UiState {
 }
 
 export const useUiStore = create<UiState>((set) => ({
-  sidebarOpen: true,
+  sidebarOpen: false,
   toasts: [],
   toggleSidebar: () =>
     set((state) => ({ sidebarOpen: !state.sidebarOpen })),
