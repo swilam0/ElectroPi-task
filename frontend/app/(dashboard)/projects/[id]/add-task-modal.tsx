@@ -3,6 +3,7 @@
 import { useCreateTask } from "@/hooks/use-tasks";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Select } from "@/components/ui/select";
 import { useState } from "react";
 import type { ProjectMember } from "@/types/project";
@@ -72,12 +73,13 @@ export function AddTaskModal({
             required
             placeholder="Task title"
           />
-          <Input
+          <Textarea
             id="task-description"
             label="Description"
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             placeholder="Optional description"
+            rows={3}
           />
           <Select
             id="task-priority"

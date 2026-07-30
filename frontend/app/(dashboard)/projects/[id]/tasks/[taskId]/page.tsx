@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Spinner } from "@/components/ui/spinner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Select } from "@/components/ui/select";
 import { useParams, useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
@@ -230,12 +231,13 @@ export default function TaskDetailPage() {
         <CardContent className="space-y-4">
           {isEditing ? (
             <>
-              <Input
+              <Textarea
                 id="edit-description"
                 label="Description"
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 placeholder="No description"
+                rows={3}
               />
               <div className="grid grid-cols-2 gap-4">
                 <Select

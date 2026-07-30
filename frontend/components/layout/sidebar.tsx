@@ -28,18 +28,20 @@ export function Sidebar() {
 
   return (
     <>
-      {sidebarOpen && (
-        <div
-          className="fixed inset-0 z-40 bg-black/50 md:hidden"
-          onClick={() => setSidebarOpen(false)}
-        />
-      )}
+      <div
+        className={cn(
+          "fixed inset-0 z-40 bg-black/50 transition-opacity duration-300 md:hidden",
+          sidebarOpen ? "opacity-100" : "opacity-0 pointer-events-none"
+        )}
+        onClick={() => setSidebarOpen(false)}
+      />
       <aside
         className={cn(
           "flex h-screen flex-col border-r border-gray-200 bg-white transition-all duration-300",
-          sidebarOpen
-            ? "fixed inset-y-0 left-0 z-50 w-60 md:static md:z-auto"
-            : "hidden md:flex md:w-16"
+          "fixed inset-y-0 left-0 z-50 w-60",
+          sidebarOpen ? "translate-x-0" : "-translate-x-full",
+          "md:static md:z-auto md:translate-x-0",
+          sidebarOpen ? "md:w-60" : "md:w-16"
         )}
       >
       <div className="flex h-14 items-center gap-3 border-b border-gray-200 px-4">
