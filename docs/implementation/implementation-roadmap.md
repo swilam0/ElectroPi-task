@@ -483,10 +483,10 @@ Full integration test suite covering all API endpoints against a real database, 
 
 ---
 
-## Phase 8: Frontend Scaffolding & Auth UI
+## Phase 8a: Project Scaffolding & Frontend Infrastructure
 
 ### Goal
-Bootable Next.js app with authentication screens and auth state management.
+Bootable Next.js app with all shared infrastructure — API client, auth helpers, UI primitives, state management, and providers.
 
 ### Dependencies
 - Phases 2a–2b (full backend auth API must be available)
@@ -500,14 +500,41 @@ Bootable Next.js app with authentication screens and auth state management.
 ### Deliverables
 - Next.js App Router project with TypeScript and Tailwind
 - Root layout with React Query provider (`QueryProvider`)
-- Auth pages: `/login` (form), `/register` (form), `/logout` (server component)
 - `lib/api.ts` — fetch wrapper with auth header injection
 - `lib/auth.ts` — token storage (access in memory, refresh in localStorage)
-- `hooks/use-auth.ts` — React Query hooks for login/register/logout/me
 - `stores/ui-store.ts` — Zustand for UI state (sidebar, toasts)
-- `components/layout/auth-check.tsx` — redirects unauthenticated users
 - `components/ui/` — button, input, card, spinner, toast primitives
+- `.env.local` with `NEXT_PUBLIC_API_URL` and `NEXT_PUBLIC_APP_URL`
+
+### Checklist
+- [ ] `npm run dev` starts without errors on port 3000
+- [ ] Root layout renders with React Query `QueryProvider`
+- [ ] `lib/api.ts` can make GET/POST/PATCH/DELETE requests to backend
+- [ ] `lib/auth.ts` stores access token in memory and refresh token in localStorage
+- [ ] `stores/ui-store.ts` manages sidebar open/close state and toast queue
+- [ ] UI primitives (Button, Input, Card, Spinner, Toast) render correctly
+- [ ] API calls reach the backend at `http://localhost:3001/api`
+
+---
+
+## Phase 8b: Auth UI & Route Protection
+
+### Goal
+Authentication screens (login, register, logout) with auth state management and route protection.
+
+### Dependencies
+- Phase 8a (frontend infrastructure must be in place)
+
+### Documents
+- `frontend-structure.md`
+- `auth-module.md`
+- `env-variables.md`
+
+### Deliverables
 - `(auth)/layout.tsx` — centered card layout, no sidebar
+- Auth pages: `/login` (form), `/register` (form), `/logout` (server component)
+- `hooks/use-auth.ts` — React Query hooks for login/register/logout/me
+- `components/layout/auth-check.tsx` — redirects unauthenticated users to `/login`
 
 ### Checklist
 - [ ] `/login` renders form; valid credentials redirect to `/dashboard`
@@ -520,13 +547,13 @@ Bootable Next.js app with authentication screens and auth state management.
 
 ---
 
-## Phase 9: Frontend Dashboard & Projects UI
+## Phase 9a: Dashboard Layout & Project Views
 
 ### Goal
-Dashboard layout with project CRUD and member management.
+Dashboard shell (sidebar + header) with project list, detail view, and project creation.
 
 ### Dependencies
-- Phase 8 (frontend auth)
+- Phase 8b (auth UI & route protection)
 - Phases 4a–4b (backend projects API)
 
 ### Documents
@@ -538,30 +565,51 @@ Dashboard layout with project CRUD and member management.
 - `components/layout/sidebar.tsx` — navigation with active state
 - `components/layout/header.tsx` — user name, logout button
 - Projects list page (fetches on server)
-- Project detail page (info + tasks + members)
+- Project detail page (info + members + tasks skeleton)
 - Project create form (client component)
-- Project settings page (title/description update)
-- Member management page (admin-only: add/remove members)
-- `hooks/use-projects.ts` — React Query hooks for project CRUD
+- `hooks/use-projects.ts` — React Query hooks for list, getById, create
 
 ### Checklist
 - [ ] Dashboard shows project list with member count and task count
 - [ ] Create project form works; new project appears in list
 - [ ] Project detail shows title, description, members, tasks
-- [ ] Project settings allows updating title/description
-- [ ] Admin can add/remove members (cannot remove creator)
-- [ ] MEMBER sees "not a member" for inaccessible projects
 - [ ] Sidebar navigation highlights active route
+- [ ] MEMBER sees "not a member" for inaccessible projects
 
 ---
 
-## Phase 10: Frontend Tasks UI
+## Phase 9b: Project Settings & Member Management
 
 ### Goal
-Task board, task detail, and task CRUD with state machine enforcement.
+Project settings updates and admin-only member management.
 
 ### Dependencies
-- Phase 9 (project pages)
+- Phase 9a (project detail page must exist for navigation)
+- Phases 4a–4b (backend projects API)
+
+### Documents
+- `frontend-structure.md`
+- `projects-module.md`
+
+### Deliverables
+- Project settings page (title/description update)
+- Member management page (admin-only: add/remove members)
+- `hooks/use-projects.ts` — add update, addMember, removeMember mutations
+
+### Checklist
+- [ ] Project settings allows updating title/description
+- [ ] Admin can add/remove members (cannot remove creator)
+- [ ] Non-member users see 403 or redirect on member management
+
+---
+
+## Phase 10a: Task Board & Task Viewing
+
+### Goal
+Read-only task board (kanban) with task cards and a dedicated task detail page.
+
+### Dependencies
+- Phase 9a (project detail page for task board navigation)
 - Phases 5a–5b (backend tasks API)
 
 ### Documents
@@ -572,14 +620,36 @@ Task board, task detail, and task CRUD with state machine enforcement.
 - Task board (kanban-style, columns: TODO / IN_PROGRESS / DONE)
 - Task card component (title, priority badge, assignee, due date)
 - Task detail page with all fields
-- Create task form (modal or page) — title, description, priority, due date, assignee
-- Edit task form — status dropdown, assignee change, field edits
-- `hooks/use-tasks.ts` — React Query hooks for task CRUD + filters
-- State machine enforcement on status changes
+- `hooks/use-tasks.ts` — React Query hooks for list (with filters) and getById
 
 ### Checklist
-- [ ] Task board shows tasks grouped by status
+- [ ] Task board shows tasks grouped by status columns
 - [ ] Task card shows title, priority (color-coded), assignee, due date
+- [ ] Task detail page renders all fields (title, description, status, priority, due date, assignee, creator, timestamps)
+
+---
+
+## Phase 10b: Task CRUD & State Machine
+
+### Goal
+Create, edit, and delete tasks with frontend state machine enforcement.
+
+### Dependencies
+- Phase 10a (task board and detail views must exist as containers)
+- Phases 5a–5b (backend tasks API)
+
+### Documents
+- `frontend-structure.md`
+- `tasks-module.md`
+
+### Deliverables
+- Create task form (modal) — title, description, priority, due date, assignee
+- Edit task form — status dropdown, assignee change, field edits
+- Delete task with confirmation
+- `hooks/use-tasks.ts` — add create, update, delete mutations
+- State machine enforcement on status changes (block invalid transitions client-side)
+
+### Checklist
 - [ ] Create task form assigns to project members only
 - [ ] Edit task allows changing status via dropdown
 - [ ] `TODO → IN_PROGRESS → DONE` progression works
@@ -591,13 +661,13 @@ Task board, task detail, and task CRUD with state machine enforcement.
 
 ---
 
-## Phase 11: Frontend Admin Panel & Polish
+## Phase 11a: Admin User Management
 
 ### Goal
-User management UI for admins, error boundaries, loading states, and polish.
+Admin-only user list, detail/edit, and delete flows.
 
 ### Dependencies
-- Phase 8 (auth)
+- Phase 8b (auth UI & route protection)
 - Phases 3a–3b (backend users API)
 
 ### Documents
@@ -608,9 +678,7 @@ User management UI for admins, error boundaries, loading states, and polish.
 - Users list page (admin-only) with search/filter by role
 - User detail/edit page (admin-only) — change name, email, role, reset password
 - Delete user flow with confirmation (admin-only)
-- Global error boundary (`app/error.tsx`)
-- Loading states (`loading.tsx` for each route group)
-- Toast notification system for success/error feedback
+- `hooks/use-users.ts` — React Query hooks for admin operations (list, findById, updateProfile, changeRole, changePassword, deleteUser)
 
 ### Checklist
 - [ ] Admin can view all users with pagination
@@ -619,6 +687,34 @@ User management UI for admins, error boundaries, loading states, and polish.
 - [ ] Admin can delete a user (cannot delete self)
 - [ ] Users list has search and role filter
 - [ ] MEMBER navigating to admin routes sees 403 or redirect
+
+---
+
+## Phase 11b: Profile Page & Application Polish
+
+### Goal
+Self-service profile page (name, email, password) and app-wide polish (error boundaries, loading states, toasts).
+
+### Dependencies
+- Phase 8b (auth UI & route protection)
+- Phase 11a (shared `use-users.ts` hooks)
+- Phases 3a–3b (backend users API)
+
+### Documents
+- `frontend-structure.md`
+- `users-module.md`
+
+### Deliverables
+- Profile page (self-service) — edit name, email, password
+  for both ADMIN and MEMBER (PATCH /users/:id + PATCH /users/:id/password)
+- Global error boundary (`app/error.tsx`)
+- Loading states (`loading.tsx` for each route group)
+- Toast notification system for success/error feedback
+
+### Checklist
+- [ ] Any user can update their own name and email
+- [ ] Any user can change their own password (requires currentPassword)
+- [ ] Admin resetting another user's password does not require currentPassword
 - [ ] Loading spinners show during API calls
 - [ ] Error toasts appear on API failures
 - [ ] 404 page renders for unknown routes

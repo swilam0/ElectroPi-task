@@ -15,28 +15,34 @@ frontend/
 │   │   ├── register/
 │   │   │   └── page.tsx           # Client Component — registration form
 │   │   └── logout/
-│   │       └── page.tsx           # Server Component — clears tokens, redirects
+│   │   └── page.tsx           # Client Component — clears tokens, redirects
 │   │
 │   ├── (dashboard)/
 │   │   ├── layout.tsx             # Server Component — sidebar, header, auth check
 │   │   ├── page.tsx               # Server Component — redirects to /projects
 │   │   │
+│   │   ├── admin/
+│   │   │   └── users/
+│   │   │       ├── page.tsx       # Client Component — list + search users (admin only)
+│   │   │       └── [id]/
+│   │   │           └── page.tsx   # Client Component — user detail, role change, delete
+│   │   │
+│   │   ├── profile/
+│   │   │   └── page.tsx           # Client Component — edit name, email, password (self)
+│   │   │
 │   │   ├── projects/
-│   │   │   ├── page.tsx           # Server Component — project list (fetches on server)
+│   │   │   ├── page.tsx           # Client Component — fetches via React Query (client-side auth)
 │   │   │   ├── [id]/
-│   │   │   │   ├── page.tsx       # Server Component — project detail + task board
+│   │   │   │   ├── page.tsx       # Client Component — fetches via React Query (client-side auth)
+│   │   │   │   ├── tasks/
+│   │   │   │   │   └── [taskId]/
+│   │   │   │   │       └── page.tsx  # Client Component — task detail view
 │   │   │   │   ├── settings/
 │   │   │   │   │   └── page.tsx   # Client/Server mix — project settings
 │   │   │   │   └── members/
 │   │   │   │       └── page.tsx   # Client Component — member management (admin only)
 │   │   │   └── new/
 │   │   │       └── page.tsx       # Client Component — create project form
-│   │   │
-│   │   └── tasks/
-│   │       ├── [id]/
-│   │       │   └── page.tsx       # Server Component — task detail
-│   │       └── new/
-│   │           └── page.tsx       # Client Component — create task form
 │   │
 │   └── error.tsx                  # Global error boundary (Client Component)
 │
@@ -65,8 +71,8 @@ frontend/
 │   │
 │   └── layout/                    # Layout components
 │       ├── sidebar.tsx            # Client Component — nav with active state
-│       ├── header.tsx             # Server Component — user info, logout button
-│       └── auth-check.tsx         # Server Component — redirects if unauthenticated
+│       ├── header.tsx             # Client Component — reads auth state from memory/localStorage
+│       └── auth-check.tsx         # Client Component — redirects if unauthenticated
 │
 ├── lib/
 │   ├── api.ts                     # API client — fetch wrapper, auth headers
@@ -79,15 +85,15 @@ frontend/
 │
 ├── types/
 │   ├── api.ts                     # API response types (JSend envelope)
-│   ├── auth.ts                    # User, LoginResponse, RegisterResponse
+│   ├── auth.ts                    # User, LoginResponse, RegisterResponse, RefreshResponse
 │   ├── project.ts                 # Project, ProjectMember
-│   └── task.ts                    # Task, TaskStatus, Priority, TaskFilters
+│   └── task.ts                    # Task, TaskStatus, Priority, TaskFilters, CreateTaskInput, UpdateTaskInput
 │
 ├── hooks/
 │   ├── use-auth.ts                # React Query hooks — login, register, logout, me
 │   ├── use-projects.ts            # React Query hooks — project CRUD
 │   ├── use-tasks.ts               # React Query hooks — task CRUD, filters
-│   └── use-users.ts               # React Query hooks — user management (admin)
+│   └── use-users.ts               # React Query hooks — admin (list/detail/delete/role) + self-service (profile edit, password change)
 │
 ├── providers/
 │   └── query-provider.tsx         # Client Component — React Query provider
@@ -101,6 +107,8 @@ frontend/
 ├── tailwind.config.ts
 └── .env.local                     # NOT COMMITTED
 ```
+
+> **Note:** Server-side data fetching requires cookie-based auth tokens. Since the current implementation uses localStorage + in-memory tokens, all pages that fetch authenticated data are Client Components using React Query. Server Components are used only for layout and static UI.
 
 ## Server Component vs Client Component Rules
 
