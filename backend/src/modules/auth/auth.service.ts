@@ -1,4 +1,4 @@
-import { HttpException, HttpStatus, Injectable, UnauthorizedException } from '@nestjs/common';
+import { HttpException, HttpStatus, Injectable, InternalServerErrorException, Logger, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
@@ -11,6 +11,7 @@ import type { StringValue } from 'ms';
 
 @Injectable()
 export class AuthService {
+  private readonly logger = new Logger(AuthService.name);
   private readonly lockoutThreshold = 10;
   private readonly lockoutDurationMs = 15 * 60 * 1000;
 
@@ -180,15 +181,24 @@ export class AuthService {
   }
 
   async logout(userId: string, accessJti: string, refreshToken: string, accessExp: number) {
-    const tokenHash = this.hashToken(refreshToken);
-    const stored = await this.authRepository.findRefreshTokenByHash(tokenHash);
+    try {
+      const tokenHash = this.hashToken(refreshToken);
+      const stored = await this.authRepository.findRefreshTokenByHash(tokenHash);
 
-    if (stored) {
-      await this.authRepository.deleteRefreshToken(stored.id);
+      if (stored) {
+        await this.authRepository.deleteRefreshToken(stored.id);
+      }
+
+      const remainingTtl = Math.max(0, accessExp - Math.floor(Date.now() / 1000));
+      await this.redisService.set(`blacklist:${accessJti}`, '1', 'EX', remainingTtl || 1);
+    } catch (error) {
+      this.logger.error(`Logout failed for user ${userId}:`, error);
+      throw new InternalServerErrorException({
+        status: 'error',
+        message: 'Logout failed',
+        code: 'G-001',
+      });
     }
-
-    const remainingTtl = Math.max(0, accessExp - Math.floor(Date.now() / 1000));
-    await this.redisService.set(`blacklist:${accessJti}`, '1', 'EX', remainingTtl || 1);
   }
 
   async me(userId: string) {

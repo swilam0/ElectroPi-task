@@ -1,6 +1,7 @@
 {
   "name": "electropi",
   "private": true,
+  "packageManager": "npm@11.16.0",
   "workspaces": ["backend", "frontend"],
   "scripts": {
     "dev": "turbo dev",

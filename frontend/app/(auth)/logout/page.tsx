@@ -10,7 +10,7 @@ export default function LogoutPage() {
   const logout = useLogout();
 
   useEffect(() => {
-    logout.mutateAsync().finally(() => {
+    logout.mutateAsync().catch(() => {}).finally(() => {
       router.push("/login");
     });
   }, []);

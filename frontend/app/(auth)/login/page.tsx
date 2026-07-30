@@ -1,8 +1,8 @@
 "use client";
 
 import { useLogin } from "@/hooks/use-auth";
-import { useRouter, redirect } from "next/navigation";
-import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -15,8 +15,14 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
 
+  useEffect(() => {
+    if (isAuthenticated()) {
+      router.replace("/projects");
+    }
+  }, []);
+
   if (isAuthenticated()) {
-    redirect("/projects");
+    return null;
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
