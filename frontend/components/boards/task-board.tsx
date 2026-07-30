@@ -8,6 +8,7 @@ import { Inbox } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useUiStore } from "@/stores/ui-store";
 import { getUser } from "@/lib/auth";
+import { useIsMobile } from "@/hooks/use-media-query";
 import type { TaskStatus, Priority, TaskFilters, Task } from "@/types/task";
 import {
   DndContext,
@@ -120,6 +121,7 @@ export function TaskBoard({
 
   const currentUser = getUser();
   const role = currentUser?.role ?? "MEMBER";
+  const isMobile = useIsMobile();
   const updateTask = useUpdateTask();
   const [activeTask, setActiveTask] = useState<Task | null>(null);
   const [pendingMoveIds, setPendingMoveIds] = useState<Set<string>>(new Set());
@@ -289,11 +291,7 @@ export function TaskBoard({
           </button>
         )}
       </div>
-      <DndContext
-        sensors={sensors}
-        onDragStart={handleDragStart}
-        onDragEnd={handleDragEnd}
-      >
+      {isMobile ? (
         <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
           {columns.map((col) => {
             const columnTasks = tasks.filter((t) => t.status === col.id);
@@ -303,10 +301,6 @@ export function TaskBoard({
                 id={col.id}
                 label={col.label}
                 count={columnTasks.length}
-                disabled={
-                  !!activeTask &&
-                  !getValidTransitions(activeTask.status, role).includes(col.id)
-                }
               >
                 {columnTasks.length === 0 ? (
                   <div className="flex flex-col items-center py-6 text-gray-300">
@@ -322,33 +316,68 @@ export function TaskBoard({
             );
           })}
         </div>
-        <DragOverlay dropAnimation={null}>
-          {activeTask ? (
-            <div
-              className={cn(
-                "rounded-lg border border-gray-200 bg-white p-3 shadow-xl w-72 border-l-4",
-                activeTask.priority === "HIGH" && "border-l-red-500",
-                activeTask.priority === "MEDIUM" && "border-l-yellow-500",
-                activeTask.priority === "LOW" && "border-l-green-500"
-              )}
-            >
-              <h4 className="text-sm font-semibold text-gray-900">
-                {activeTask.title}
-              </h4>
-              <div className="mt-2 flex flex-wrap items-center gap-2">
-                <span
-                  className={cn(
-                    "rounded-full px-2 py-0.5 text-xs font-medium",
-                    priorityColors[activeTask.priority]
-                  )}
+      ) : (
+        <DndContext
+          sensors={sensors}
+          onDragStart={handleDragStart}
+          onDragEnd={handleDragEnd}
+        >
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+            {columns.map((col) => {
+              const columnTasks = tasks.filter((t) => t.status === col.id);
+              return (
+                <DroppableColumn
+                  key={col.id}
+                  id={col.id}
+                  label={col.label}
+                  count={columnTasks.length}
+                  disabled={
+                    !!activeTask &&
+                    !getValidTransitions(activeTask.status, role).includes(col.id)
+                  }
                 >
-                  {activeTask.priority}
-                </span>
+                  {columnTasks.length === 0 ? (
+                    <div className="flex flex-col items-center py-6 text-gray-300">
+                      <Inbox className="mb-2 h-8 w-8" />
+                      <p className="text-xs">No tasks</p>
+                    </div>
+                  ) : (
+                    columnTasks.map((task) => (
+                      <TaskCard key={task.id} task={task} dimmed={pendingMoveIds.has(task.id)} />
+                    ))
+                  )}
+                </DroppableColumn>
+              );
+            })}
+          </div>
+          <DragOverlay dropAnimation={null}>
+            {activeTask ? (
+              <div
+                className={cn(
+                  "rounded-lg border border-gray-200 bg-white p-3 shadow-xl w-72 border-l-4",
+                  activeTask.priority === "HIGH" && "border-l-red-500",
+                  activeTask.priority === "MEDIUM" && "border-l-yellow-500",
+                  activeTask.priority === "LOW" && "border-l-green-500"
+                )}
+              >
+                <h4 className="text-sm font-semibold text-gray-900">
+                  {activeTask.title}
+                </h4>
+                <div className="mt-2 flex flex-wrap items-center gap-2">
+                  <span
+                    className={cn(
+                      "rounded-full px-2 py-0.5 text-xs font-medium",
+                      priorityColors[activeTask.priority]
+                    )}
+                  >
+                    {activeTask.priority}
+                  </span>
+                </div>
               </div>
-            </div>
-          ) : null}
-        </DragOverlay>
-      </DndContext>
+            ) : null}
+          </DragOverlay>
+        </DndContext>
+      )}
     </div>
   );
 }
